@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to AT&T BGW320-505 Modem/Router",
-        "description": "Enter the IP address of your AT&T BGW320-505 Modem/Router.",
+        "title": "Connect to AT&T BGW320-505",
+        "description": "Enter the IP address of your AT&T BGW320-505.",
         "data": {
           "host": "IP Address"
         }
