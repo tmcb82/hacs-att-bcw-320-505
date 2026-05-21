@@ -16,8 +16,8 @@ class BGW320Client:
             "uptime_seconds": self._extract_value(sysinfo_html, "Time Since Last Reboot"),
             "pon_link_status": self._extract_value(stats_html, "PON Link Status"),
             "broadband_connection": self._extract_value(stats_html, "Broadband Connection"),
-            "bytes_transmitted": self._extract_value(stats_html, "Transmit Bytes"),
-            "bytes_received": self._extract_value(stats_html, "Receive Bytes")
+            "ethernet_connection": self._extract_value(stats_html, "Line State"),
+            "ethernet_link_speed": self._extract_value(stats_html, "Current Speed (Mbps)")
         }
         return data
 
