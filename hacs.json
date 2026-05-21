@@ -1,0 +1,7 @@
+{
+  "name": "AT&T BGW320",
+  "render_readme": true,
+  "filename": "bgw320.zip",
+  "iot_class": "Local Polling",
+  "homeassistant": "2023.8.0"
+}

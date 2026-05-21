@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to BGW320",
+        "description": "Enter the IP address of your AT&T BGW320 router.",
+        "data": {
+          "host": "IP Address"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Please verify the IP address."
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
