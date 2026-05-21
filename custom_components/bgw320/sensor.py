@@ -1,130 +1,47 @@
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import UnitOfInformation
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from .const import DOMAIN
+import aiohttp
+from bs4 import BeautifulSoup
+import re
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    
-    sensors = [
-        SoftwareVersionSensor(coordinator),
-        UptimeSensor(coordinator),
-        FiberLinkStatusSensor(coordinator),
-        BroadbandConnectionSensor(coordinator),
-        GBTransmittedSensor(coordinator),
-        GBReceivedSensor(coordinator),
-    ]
-    async_add_entities(sensors)
+class BGW320Client:
+    def __init__(self, host: str, session: aiohttp.ClientSession):
+        self.host = host
+        self.session = session
+        self.base_url = f"http://{self.host}/cgi-bin"
 
-class BGW320SensorBase(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator):
-        super().__init__(coordinator)
-        self._device_id = coordinator.client.host
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": "AT&T BGW320 Router",
-            "manufacturer": "Nokia",
-            "model": "BGW320-505",
-            "configuration_url": f"http://{self._device_id}",
+    async def fetch_data(self) -> dict:
+        sysinfo_html = await self._get_html(f"{self.base_url}/sysinfo.ha")
+        stats_html = await self._get_html(f"{self.base_url}/broadbandstatistics.ha")
+
+        data = {
+            "software_version": self._extract_value(sysinfo_html, "Software Version"),
+            "uptime_seconds": self._extract_value(sysinfo_html, "Time Since Last Reboot"),
+            "fiber_link_status": self._extract_value(stats_html, "Link Status"),
+            "broadband_connection": self._extract_value(stats_html, "Broadband Connection"),
+            "bytes_transmitted": self._extract_value(stats_html, "Transmit Bytes"),
+            "bytes_received": self._extract_value(stats_html, "Receive Bytes")
         }
+        return data
 
-class SoftwareVersionSensor(BGW320SensorBase):
-    _attr_name = "Software Version"
-    _attr_icon = "mdi:cellphone-link"
+    async def _get_html(self, url: str) -> str:
+        async with self.session.get(url, timeout=10) as response:
+            response.raise_for_status()
+            return await response.text()
 
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_software_version"
+    def _extract_value(self, html: str, label: str) -> str | None:
+        soup = BeautifulSoup(html, "html.parser")
+        pattern = re.compile(rf"^\s*{re.escape(label)}[:\s]*$", re.IGNORECASE)
+        label_tag = soup.find(string=pattern)
+        
+        if label_tag:
+            parent = label_tag.parent
+            next_td = parent.find_next_sibling("td")
+            if next_td:
+                return next_td.get_text(strip=True)
+        return None
 
-    @property
-    def native_value(self):
-        return self.coordinator.data.get("software_version")
-
-class UptimeSensor(BGW320SensorBase):
-    _attr_name = "Time Since Last Reboot"
-    _attr_icon = "mdi:clock-outline"
-
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_uptime"
-
-    @property
-    def native_value(self):
-        seconds_str = self.coordinator.data.get("uptime_seconds")
-        if not seconds_str:
-            return None
-            
+    async def test_connection(self) -> bool:
         try:
-            total_seconds = int(seconds_str)
-            days = round(total_seconds / 86400)
-            return f"{days} day{'s' if days != 1 else ''}"
-        except ValueError:
-            return None
-
-class FiberLinkStatusSensor(BGW320SensorBase):
-    _attr_name = "Fiber Link Status"
-    _attr_icon = "mdi:lan-connect"
-
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_fiber_link_status"
-
-    @property
-    def native_value(self):
-        return self.coordinator.data.get("fiber_link_status")
-
-class BroadbandConnectionSensor(BGW320SensorBase):
-    _attr_name = "Broadband Connection"
-    _attr_icon = "mdi:wan"
-
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_broadband_connection"
-
-    @property
-    def native_value(self):
-        return self.coordinator.data.get("broadband_connection")
-
-class GBTransmittedSensor(BGW320SensorBase):
-    _attr_name = "GB Transmitted"
-    _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
-    _attr_icon = "mdi:upload-network"
-
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_gb_transmitted"
-
-    @property
-    def native_value(self):
-        val = self.coordinator.data.get("bytes_transmitted")
-        if val and isinstance(val, str):
-            try:
-                bytes_int = int(val.replace(',', ''))
-                return round(bytes_int / 1073741824, 2)
-            except ValueError:
-                return None
-        return None
-
-class GBReceivedSensor(BGW320SensorBase):
-    _attr_name = "GB Received"
-    _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
-    _attr_icon = "mdi:download-network"
-
-    @property
-    def unique_id(self):
-        return f"{self._device_id}_gb_received"
-
-    @property
-    def native_value(self):
-        val = self.coordinator.data.get("bytes_received")
-        if val and isinstance(val, str):
-            try:
-                bytes_int = int(val.replace(',', ''))
-                return round(bytes_int / 1073741824, 2)
-            except ValueError:
-                return None
-        return None
+            await self._get_html(f"{self.base_url}/sysinfo.ha")
+            return True
+        except Exception:
+            return False
