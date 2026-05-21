@@ -19,7 +19,7 @@ class BGW320ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if await client.test_connection():
                 return self.async_create_entry(
-                    title=f"AT&T BGW320-505 Modem/Router ({user_input[CONF_HOST]})",
+                    title=f"AT&T BGW320-505 ({user_input[CONF_HOST]})",
                     data=user_input
                 )
             errors["base"] = "cannot_connect"
