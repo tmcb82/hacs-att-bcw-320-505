@@ -1,6 +1,5 @@
 import aiohttp
 from bs4 import BeautifulSoup
-import re
 
 class BGW320Client:
     def __init__(self, host: str, session: aiohttp.ClientSession):
@@ -29,12 +28,20 @@ class BGW320Client:
 
     def _extract_value(self, html: str, label: str) -> str | None:
         soup = BeautifulSoup(html, "html.parser")
-        label_tag = soup.find(string=re.compile(label, re.IGNORECASE))
-        if label_tag:
-            parent = label_tag.parent
-            next_td = parent.find_next_sibling("td")
-            if next_td:
-                return next_td.get_text(strip=True)
+        
+        for tag in soup.find_all(["th", "td", "div", "span"]):
+            text = tag.get_text(strip=True).strip(":")
+            if text.lower() == label.lower():
+                next_td = tag.find_next_sibling("td")
+                
+                if not next_td:
+                    parent = tag.parent
+                    if parent:
+                        next_td = parent.find_next_sibling("td") or parent.find_next("td")
+                        
+                if next_td:
+                    return next_td.get_text(strip=True)
+                    
         return None
 
     async def test_connection(self) -> bool:
