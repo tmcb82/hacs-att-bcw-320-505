@@ -1,4 +1,4 @@
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import UnitOfInformation
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -12,8 +12,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         SoftwareVersionSensor(coordinator),
         UptimeSensor(coordinator),
         FiberLinkStatusSensor(coordinator),
-        BytesTransmittedSensor(coordinator),
-        BytesReceivedSensor(coordinator),
+        BroadbandConnectionSensor(coordinator),
+        GBTransmittedSensor(coordinator),
+        GBReceivedSensor(coordinator),
     ]
     async_add_entities(sensors)
 
@@ -86,34 +87,58 @@ class FiberLinkStatusSensor(BGW320SensorBase):
     def native_value(self):
         return self.coordinator.data.get("fiber_link_status")
 
-class BytesTransmittedSensor(BGW320SensorBase):
-    _attr_name = "Bytes Transmitted"
+class BroadbandConnectionSensor(BGW320SensorBase):
+    _attr_name = "Broadband Connection"
+    _attr_icon = "mdi:wan"
+
+    @property
+    def unique_id(self):
+        return f"{self._device_id}_broadband_connection"
+
+    @property
+    def native_value(self):
+        return self.coordinator.data.get("broadband_connection")
+
+class GBTransmittedSensor(BGW320SensorBase):
+    _attr_name = "GB Transmitted"
     _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
     _attr_icon = "mdi:upload-network"
 
     @property
     def unique_id(self):
-        return f"{self._device_id}_bytes_transmitted"
+        return f"{self._device_id}_gb_transmitted"
 
     @property
     def native_value(self):
         val = self.coordinator.data.get("bytes_transmitted")
-        return int(val.replace(',', '')) if val and isinstance(val, str) else val
+        if val and isinstance(val, str):
+            try:
+                bytes_int = int(val.replace(',', ''))
+                # Convert Bytes to Gigabytes (1 GB = 1073741824 Bytes)
+                return round(bytes_int / 1073741824, 2)
+            except ValueError:
+                return None
+        return None
 
-class BytesReceivedSensor(BGW320SensorBase):
-    _attr_name = "Bytes Received"
+class GBReceivedSensor(BGW320SensorBase):
+    _attr_name = "GB Received"
     _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
     _attr_icon = "mdi:download-network"
 
     @property
     def unique_id(self):
-        return f"{self._device_id}_bytes_received"
+        return f"{self._device_id}_gb_received"
 
     @property
     def native_value(self):
         val = self.coordinator.data.get("bytes_received")
-        return int(val.replace(',', '')) if val and isinstance(val, str) else val
+        if val and isinstance(val, str):
+            try:
+                bytes_int = int(val.replace(',', ''))
+                # Convert Bytes to Gigabytes (1 GB = 1073741824 Bytes)
+                return round(bytes_int / 1073741824, 2)
+            except ValueError:
+                return None
+        return None
