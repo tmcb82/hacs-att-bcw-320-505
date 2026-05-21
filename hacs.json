@@ -1,5 +1,5 @@
 {
-  "name": "AT&T BGW320",
+  "name": "AT&T BGW320-505 Modem/Router",
   "render_readme": true,
   "filename": "bgw320.zip",
   "iot_class": "Local Polling",
