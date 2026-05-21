@@ -1,5 +1,5 @@
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import UnitOfInformation, UnitOfTime
+from homeassistant.const import UnitOfInformation
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -45,7 +45,6 @@ class SoftwareVersionSensor(BGW320SensorBase):
 class UptimeSensor(BGW320SensorBase):
     _attr_name = "Time Since Last Reboot"
     _attr_icon = "mdi:clock-outline"
-    _attr_native_unit_of_measurement = UnitOfTime.DAYS
 
     @property
     def unique_id(self):
@@ -59,7 +58,8 @@ class UptimeSensor(BGW320SensorBase):
             
         try:
             total_seconds = int(seconds_str)
-            return round(total_seconds / 86400)
+            days = round(total_seconds / 86400)
+            return f"{days} day{'s' if days != 1 else ''}"
         except ValueError:
             return None
 
