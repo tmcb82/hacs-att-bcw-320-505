@@ -1,11 +1,11 @@
 {
   "domain": "bgw320",
-  "name": "AT&T BGW320 Router",
+  "name": "AT&T BGW320-505 Modem/Router",
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
   "documentation": "",
   "iot_class": "local_polling",
   "requirements": ["beautifulsoup4>=4.12.2"],
-  "version": "1.0.1"
+  "version": "1.0.2"
 }
