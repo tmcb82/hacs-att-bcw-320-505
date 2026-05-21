@@ -1,5 +1,4 @@
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import UnitOfInformation
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -11,10 +10,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     sensors = [
         SoftwareVersionSensor(coordinator),
         UptimeSensor(coordinator),
-        FiberLinkStatusSensor(coordinator),
+        PONLinkStatusSensor(coordinator),
         BroadbandConnectionSensor(coordinator),
-        GBTransmittedSensor(coordinator),
-        GBReceivedSensor(coordinator),
+        EthernetConnectionSensor(coordinator),
+        EthernetLinkSpeedSensor(coordinator),
     ]
     async_add_entities(sensors)
 
@@ -24,7 +23,7 @@ class BGW320SensorBase(CoordinatorEntity, SensorEntity):
         self._device_id = coordinator.client.host
         self._attr_device_info = {
             "identifiers": {(DOMAIN, self._device_id)},
-            "name": "AT&T BGW320-505 Modem/Router",
+            "name": "AT&T BGW320-505",
             "manufacturer": "Nokia",
             "model": "BGW320-505",
             "configuration_url": f"http://{self._device_id}",
@@ -63,17 +62,17 @@ class UptimeSensor(BGW320SensorBase):
         except ValueError:
             return None
 
-class FiberLinkStatusSensor(BGW320SensorBase):
-    _attr_name = "Fiber Link Status"
+class PONLinkStatusSensor(BGW320SensorBase):
+    _attr_name = "PON Link Status"
     _attr_icon = "mdi:lan-connect"
 
     @property
     def unique_id(self):
-        return f"{self._device_id}_fiber_link_status"
+        return f"{self._device_id}_pon_link_status"
 
     @property
     def native_value(self):
-        return self.coordinator.data.get("fiber_link_status")
+        return self.coordinator.data.get("pon_link_status")
 
 class BroadbandConnectionSensor(BGW320SensorBase):
     _attr_name = "Broadband Connection"
@@ -87,44 +86,34 @@ class BroadbandConnectionSensor(BGW320SensorBase):
     def native_value(self):
         return self.coordinator.data.get("broadband_connection")
 
-class GBTransmittedSensor(BGW320SensorBase):
-    _attr_name = "GB Transmitted"
-    _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
-    _attr_icon = "mdi:upload-network"
+class EthernetConnectionSensor(BGW320SensorBase):
+    _attr_name = "Ethernet Connection"
+    _attr_icon = "mdi:ethernet-cable"
 
     @property
     def unique_id(self):
-        return f"{self._device_id}_gb_transmitted"
+        return f"{self._device_id}_ethernet_connection"
 
     @property
     def native_value(self):
-        val = self.coordinator.data.get("bytes_transmitted")
-        if val and isinstance(val, str):
-            try:
-                bytes_int = int(val.replace(',', ''))
-                return round(bytes_int / 1073741824, 2)
-            except ValueError:
-                return None
-        return None
+        return self.coordinator.data.get("ethernet_connection")
 
-class GBReceivedSensor(BGW320SensorBase):
-    _attr_name = "GB Received"
-    _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_native_unit_of_measurement = UnitOfInformation.GIGABYTES
-    _attr_icon = "mdi:download-network"
+class EthernetLinkSpeedSensor(BGW320SensorBase):
+    _attr_name = "Ethernet Link Speed"
+    _attr_native_unit_of_measurement = "Gbps"
+    _attr_icon = "mdi:speedometer"
 
     @property
     def unique_id(self):
-        return f"{self._device_id}_gb_received"
+        return f"{self._device_id}_ethernet_link_speed"
 
     @property
     def native_value(self):
-        val = self.coordinator.data.get("bytes_received")
+        val = self.coordinator.data.get("ethernet_link_speed")
         if val and isinstance(val, str):
             try:
-                bytes_int = int(val.replace(',', ''))
-                return round(bytes_int / 1073741824, 2)
+                mbps_float = float(val.replace(',', ''))
+                return round(mbps_float / 1000, 2)
             except ValueError:
                 return None
         return None
