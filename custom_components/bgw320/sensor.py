@@ -1,5 +1,5 @@
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import UnitOfInformation
+from homeassistant.const import UnitOfInformation, UnitOfTime
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -45,6 +45,7 @@ class SoftwareVersionSensor(BGW320SensorBase):
 class UptimeSensor(BGW320SensorBase):
     _attr_name = "Time Since Last Reboot"
     _attr_icon = "mdi:clock-outline"
+    _attr_native_unit_of_measurement = UnitOfTime.DAYS
 
     @property
     def unique_id(self):
@@ -58,22 +59,9 @@ class UptimeSensor(BGW320SensorBase):
             
         try:
             total_seconds = int(seconds_str)
+            return round(total_seconds / 86400)
         except ValueError:
-            return seconds_str
-            
-        days, remainder = divmod(total_seconds, 86400)
-        hours, remainder = divmod(remainder, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        
-        parts = []
-        if days > 0:
-            parts.append(f"{days} day{'s' if days != 1 else ''}")
-        if hours > 0:
-            parts.append(f"{hours} hr{'s' if hours != 1 else ''}")
-        if minutes > 0:
-            parts.append(f"{minutes} min{'s' if minutes != 1 else ''}")
-            
-        return ", ".join(parts) if parts else "< 1 min"
+            return None
 
 class FiberLinkStatusSensor(BGW320SensorBase):
     _attr_name = "Fiber Link Status"
@@ -115,7 +103,6 @@ class GBTransmittedSensor(BGW320SensorBase):
         if val and isinstance(val, str):
             try:
                 bytes_int = int(val.replace(',', ''))
-                # Convert Bytes to Gigabytes (1 GB = 1073741824 Bytes)
                 return round(bytes_int / 1073741824, 2)
             except ValueError:
                 return None
@@ -137,7 +124,6 @@ class GBReceivedSensor(BGW320SensorBase):
         if val and isinstance(val, str):
             try:
                 bytes_int = int(val.replace(',', ''))
-                # Convert Bytes to Gigabytes (1 GB = 1073741824 Bytes)
                 return round(bytes_int / 1073741824, 2)
             except ValueError:
                 return None
