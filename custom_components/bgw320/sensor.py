@@ -1,3 +1,4 @@
+import re
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -111,9 +112,11 @@ class EthernetLinkSpeedSensor(BGW320SensorBase):
     def native_value(self):
         val = self.coordinator.data.get("ethernet_link_speed")
         if val and isinstance(val, str):
-            try:
-                mbps_float = float(val.replace(',', ''))
-                return round(mbps_float / 1000, 2)
-            except ValueError:
-                return None
+            match = re.search(r"([\d\.]+)", val.replace(',', ''))
+            if match:
+                try:
+                    mbps_float = float(match.group(1))
+                    return round(mbps_float / 1000, 2)
+                except ValueError:
+                    return None
         return None
