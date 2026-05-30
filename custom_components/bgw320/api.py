@@ -10,6 +10,7 @@ class BGW320Client:
     async def fetch_data(self) -> dict:
         sysinfo_html = await self._get_html(f"{self.base_url}/sysinfo.ha")
         stats_html = await self._get_html(f"{self.base_url}/broadbandstatistics.ha")
+        devices_html = await self._get_html(f"{self.base_url}/devices.ha")
 
         data = {
             "software_version": self._extract_value(sysinfo_html, "Software Version"),
@@ -17,7 +18,7 @@ class BGW320Client:
             "pon_link_status": self._extract_value(stats_html, "PON Link Status"),
             "broadband_connection": self._extract_value(stats_html, "Broadband Connection"),
             "ethernet_connection": self._extract_value(stats_html, "Line State"),
-            "ethernet_link_speed": self._extract_value(stats_html, "Current Speed (Mbps)")
+            "ethernet_link_speed": self._extract_value(devices_html, "Connection Speed")
         }
         return data
 
